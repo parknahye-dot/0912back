@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
 const app = express();
 const PORT = 3000;
 
@@ -27,77 +28,18 @@ app.post('/api/login', (req, res) => {
 // 이벤트 데이터 API
 app.get('/api/events', (req, res) => {
     try {
-        const fs = require('fs');
-        const data = fs.readFileSync(path.join(__dirname, 'public/data/data.json'), 'utf8');
+        const dataPath = path.join(__dirname, 'public/data/data.json');
+        
+        // 파일이 존재하지 않으면 빈 배열 반환
+        if (!fs.existsSync(dataPath)) {
+            return res.json([]);
+        }
+        
+        const data = fs.readFileSync(dataPath, 'utf8');
         res.json(JSON.parse(data));
     } catch (error) {
+        console.error('데이터 로드 오류:', error);
         res.status(500).json({ error: '데이터를 불러올 수 없습니다.' });
-    }
-});
-
-// 이벤트 저장 API
-app.post('/api/events', (req, res) => {
-    try {
-        const fs = require('fs');
-        const dataPath = path.join(__dirname, 'public/data/data.json');
-        
-        let events = [];
-        if (fs.existsSync(dataPath)) {
-            const data = fs.readFileSync(dataPath, 'utf8');
-            events = JSON.parse(data);
-        }
-        
-        const newEvent = {
-            event_seq: String(Date.now()),
-            ...req.body,
-            created_at: new Date().toISOString()
-        };
-        
-        events.push(newEvent);
-        fs.writeFileSync(dataPath, JSON.stringify(events, null, 2));
-        
-        res.json({ success: true, event: newEvent });
-    } catch (error) {
-        res.status(500).json({ success: false, message: '이벤트 저장 실패' });
-    }
-});
-
-// 이벤트 업데이트 API
-app.put('/api/events/:id', (req, res) => {
-    try {
-        const fs = require('fs');
-        const dataPath = path.join(__dirname, 'public/data/data.json');
-        const data = fs.readFileSync(dataPath, 'utf8');
-        let events = JSON.parse(data);
-        
-        const eventIndex = events.findIndex(e => e.event_seq === req.params.id);
-        if (eventIndex === -1) {
-            return res.status(404).json({ success: false, message: '이벤트를 찾을 수 없습니다.' });
-        }
-        
-        events[eventIndex] = { ...events[eventIndex], ...req.body, updated_at: new Date().toISOString() };
-        fs.writeFileSync(dataPath, JSON.stringify(events, null, 2));
-        
-        res.json({ success: true, event: events[eventIndex] });
-    } catch (error) {
-        res.status(500).json({ success: false, message: '이벤트 업데이트 실패' });
-    }
-});
-
-// 이벤트 삭제 API
-app.delete('/api/events/:id', (req, res) => {
-    try {
-        const fs = require('fs');
-        const dataPath = path.join(__dirname, 'public/data/data.json');
-        const data = fs.readFileSync(dataPath, 'utf8');
-        let events = JSON.parse(data);
-        
-        const filteredEvents = events.filter(e => e.event_seq !== req.params.id);
-        fs.writeFileSync(dataPath, JSON.stringify(filteredEvents, null, 2));
-        
-        res.json({ success: true });
-    } catch (error) {
-        res.status(500).json({ success: false, message: '이벤트 삭제 실패' });
     }
 });
 
