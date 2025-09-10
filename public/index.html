@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>백오피스 관리 시스템</title>
+    <link rel="stylesheet" href="css/common.css">
+    <link rel="stylesheet" href="css/calendar.css">
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <div class="sidebar-toggle" onclick="toggleSidebar()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+            <div class="logo">백오피스 관리</div>
+        </div>
+        <div class="header-right">
+            <div class="user-info">
+                <span>관리자</span>
+                <button class="logout-btn" onclick="logout()">로그아웃</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="sidebar" id="sidebar">
+        <nav class="sidebar-nav">
+            <ul>
+                <li><a href="#" class="active">캘린더 관리</a></li>
+                <li><a href="#">이벤트 관리</a></li>
+                <li><a href="#">통계 관리</a></li>
+            </ul>
+        </nav>
+    </div>
+
+    <main class="main-content" id="mainContent">
+        <div class="page-header">
+            <h1>공연 캘린더 관리</h1>
+            <div class="page-actions">
+                <div class="search-container">
+                    <input type="text" class="search-input" id="searchInput" placeholder="공연명, 장소, 지역 검색..." onkeypress="handleSearchKeypress(event)">
+                    <button class="btn btn-secondary" onclick="searchEvents()">검색</button>
+                </div>
+                <button class="btn btn-primary" onclick="showCreateModal()">생성</button>
+            </div>
+        </div>
+
+        <div class="search-results" id="searchResults"></div>
+
+        <div class="calendar-section">
+            <div class="calendar-header">
+                <div class="calendar-nav">
+                    <button class="nav-btn" onclick="changeMonth(-1)">
+                        <svg width="16" height="16" fill="currentColor">
+                            <path d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/>
+                        </svg>
+                    </button>
+                    <h2 class="current-month" id="currentMonth"></h2>
+                    <button class="nav-btn" onclick="changeMonth(1)">
+                        <svg width="16" height="16" fill="currentColor">
+                            <path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+                        </svg>
+                    </button>
+                </div>
+                <button class="today-btn" onclick="goToToday()">오늘</button>
+            </div>
+
+            <div class="calendar-container">
+                <div class="calendar-grid" id="calendarGrid">
+                    <div class="calendar-header-cell">일</div>
+                    <div class="calendar-header-cell">월</div>
+                    <div class="calendar-header-cell">화</div>
+                    <div class="calendar-header-cell">수</div>
+                    <div class="calendar-header-cell">목</div>
+                    <div class="calendar-header-cell">금</div>
+                    <div class="calendar-header-cell">토</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 일정 목록 모달 -->
+    <div class="modal-overlay" id="dayEventsModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title" id="dayEventsTitle"></h3>
+                <button class="close-btn" onclick="closeDayEventsModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="dayEventsBody"></div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeDayEventsModal()">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 공연 상세 모달 -->
+    <div class="modal-overlay" id="eventDetailModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title" id="eventDetailTitle"></h3>
+                <button class="close-btn" onclick="closeEventDetailModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="eventDetailBody"></div>
+            <div class="modal-footer">
+                <button class="btn btn-danger" onclick="deleteCurrentEvent()">삭제</button>
+                <button class="btn btn-secondary" onclick="closeEventDetailModal()">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 이벤트 생성/수정 모달 -->
+    <div class="modal-overlay" id="createEventModal">
+        <div class="modal large">
+            <div class="modal-header">
+                <h3 class="modal-title" id="createEventTitle">새 공연 등록</h3>
+                <button class="close-btn" onclick="closeCreateModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form class="event-form" id="eventForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="subject">공연명 *</label>
+                            <input type="text" id="subject" name="subject" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="event_gubun">이벤트 구분</label>
+                            <select id="event_gubun" name="event_gubun">
+                                <option value="공연">공연</option>
+                                <option value="전시">전시</option>
+                                <option value="축제">축제</option>
+                                <option value="기타">기타</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="start_date">시작일 *</label>
+                            <input type="date" id="start_date" name="start_date" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="end_date">종료일 *</label>
+                            <input type="date" id="end_date" name="end_date" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="place">장소 *</label>
+                            <input type="text" id="place" name="place" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="event_area">지역</label>
+                            <input type="text" id="event_area" name="event_area">
+                        </div>
+                        <div class="form-group">
+                            <label for="host">주최</label>
+                            <input type="text" id="host" name="host">
+                        </div>
+                        <div class="form-group">
+                            <label for="contact">연락처</label>
+                            <input type="text" id="contact" name="contact">
+                        </div>
+                        <div class="form-group">
+                            <label for="pay_gubun">유료/무료</label>
+                            <select id="pay_gubun" name="pay_gubun">
+                                <option value="유료">유료</option>
+                                <option value="무료">무료</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="pay">가격</label>
+                            <input type="text" id="pay" name="pay">
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="homepage">홈페이지</label>
+                            <input type="url" id="homepage" name="homepage">
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="content">내용</label>
+                            <textarea id="content" name="content" rows="4"></textarea>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeCreateModal()">취소</button>
+                <button class="btn btn-primary" onclick="saveEvent()">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="js/calendar.js"></script>
+    <script src="js/eventDetail.js"></script>
+    <script src="js/dragDrop.js"></script>
+</body>
+</html>

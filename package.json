@@ -1,0 +1,16 @@
+{
+  "name": "backoffice-system",
+  "version": "1.0.0",
+  "description": "백오피스 관리 시스템",
+  "main": "server.js",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "keywords": ["backoffice", "calendar", "admin"],
+  "author": "",
+  "license": "MIT"
+}
