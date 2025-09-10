@@ -1,5 +1,17 @@
 <!DOCTYPE html>
 <html lang="ko">
+    <!-- index.html 헤더 부분 -->
+<header class="header">
+    <div class="header-left">
+        <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+        <h1>백오피스 관리</h1>
+    </div>
+    <div class="header-right">
+        <span>관리자</span>
+        <button class="logout-btn" onclick="logout()">로그아웃</button>
+    </div>
+</header>
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -188,6 +200,7 @@
 
     <div class="toast" id="toast"></div>
 
+    <script src="js/auth.js"></script>
     <script src="js/calendar.js"></script>
     <script src="js/eventDetail.js"></script>
     <script src="js/dragDrop.js"></script>

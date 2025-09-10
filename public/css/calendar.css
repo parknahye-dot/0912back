@@ -511,3 +511,160 @@
         width: 100%;
     }
 }
+
+/* 캘린더 관련 CSS */
+
+.calendar-cell {
+    min-height: 120px;
+    border: 1px solid #e5e7eb;
+    padding: 8px;
+    background: white;
+    position: relative;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.calendar-cell:hover {
+    background: #f9fafb;
+}
+
+/* 다른 달 날짜 스타일링 */
+.calendar-cell.other-month {
+    background: #f3f4f6;
+    color: #9ca3af;
+    opacity: 0.6;
+}
+
+.calendar-cell.other-month:hover {
+    background: #e5e7eb;
+}
+
+.calendar-cell.other-month .date-number {
+    color: #9ca3af;
+    font-weight: normal;
+}
+
+/* 현재 월 날짜 스타일링 */
+.calendar-cell .date-number {
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 4px;
+}
+
+/* 오늘 날짜 스타일링 */
+.calendar-cell.today {
+    background: #dbeafe;
+    border-color: #3b82f6;
+}
+
+.calendar-cell.today .date-number {
+    color: #1e40af;
+    font-weight: 700;
+}
+
+/* 다른 달이면서 오늘인 경우 (이전달 말일이나 다음달 초일이 오늘인 경우) */
+.calendar-cell.today.other-month {
+    background: #f1f5f9;
+    border-color: #64748b;
+    opacity: 0.8;
+}
+
+.calendar-cell.today.other-month .date-number {
+    color: #64748b;
+}
+
+/* 이벤트 아이템 스타일링 */
+.event-item {
+    background: #3b82f6;
+    color: white;
+    padding: 2px 6px;
+    margin: 1px 0;
+    border-radius: 3px;
+    font-size: 11px;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: background-color 0.2s;
+}
+
+.event-item:hover {
+    background: #2563eb;
+}
+
+/* 다른 달의 이벤트는 숨김 (필요시 주석 해제) */
+.calendar-cell.other-month .event-item {
+    display: none;
+}
+
+/* 또는 다른 달의 이벤트를 흐리게 표시하고 싶다면 */
+/*
+.calendar-cell.other-month .event-item {
+    opacity: 0.3;
+    background: #9ca3af;
+    pointer-events: none;
+}
+*/
+
+/* 캘린더 그리드 */
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    overflow: hidden;
+    background: white;
+}
+
+/* 캘린더 헤더 (요일) */
+.calendar-header-cell {
+    background: #374151;
+    color: white;
+    padding: 12px 8px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 14px;
+    border-right: 1px solid #4b5563;
+}
+
+.calendar-header-cell:last-child {
+    border-right: none;
+}
+
+/* 주말 스타일링 */
+.calendar-cell:nth-child(7n+1) .date-number { /* 일요일 */
+    color: #dc2626;
+}
+
+.calendar-cell:nth-child(7n) .date-number { /* 토요일 */
+    color: #2563eb;
+}
+
+/* 다른 달의 주말도 동일하게 적용하되 더 흐리게 */
+.calendar-cell.other-month:nth-child(7n+1) .date-number { /* 다른 달 일요일 */
+    color: #fca5a5;
+}
+
+.calendar-cell.other-month:nth-child(7n) .date-number { /* 다른 달 토요일 */
+    color: #93c5fd;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .calendar-cell {
+        min-height: 80px;
+        padding: 4px;
+    }
+    
+    .calendar-cell .date-number {
+        font-size: 12px;
+    }
+    
+    .event-item {
+        font-size: 10px;
+        padding: 1px 4px;
+    }
+}
+

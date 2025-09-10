@@ -259,3 +259,23 @@ textarea {
         max-width: none;
     }
 }
+
+.logout-btn {
+    background: #ef4444;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.logout-btn:hover {
+    background: #dc2626;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}

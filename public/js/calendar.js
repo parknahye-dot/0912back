@@ -5,43 +5,112 @@ let eventsData = [];
 let currentSelectedDate = null;
 let isEditMode = false;
 let editingEventId = null;
+let isInitialized = false;
+
+// 로그인 상태 확인 함수 (auth.js에서 정의된 함수 사용)
+function checkLoginStatus() {
+    const isLoggedIn = sessionStorage.getItem('isLoggedIn');
+    const loginTime = sessionStorage.getItem('loginTime');
+    
+    if (!isLoggedIn) {
+        // 로그인되지 않은 경우 로그인 페이지로 리다이렉트
+        window.location.href = '/login.html';
+        return false;
+    }
+    
+    // 세션 만료 확인 (24시간)
+    if (loginTime) {
+        const currentTime = new Date().getTime();
+        const timeDiff = currentTime - parseInt(loginTime);
+        const hoursDiff = timeDiff / (1000 * 60 * 60);
+        
+        if (hoursDiff > 24) {
+            // 세션 만료 시 로그아웃
+            sessionStorage.removeItem('isLoggedIn');
+            sessionStorage.removeItem('loginTime');
+            localStorage.removeItem('authToken');
+            window.location.href = '/login.html';
+            return false;
+        }
+    }
+    
+    return true;
+}
 
 // 페이지 로드 시 초기화
-document.addEventListener('DOMContentLoaded', function() {
-    // 로그인 상태 확인
-    if (!checkLoginStatus()) return;
+document.addEventListener('DOMContentLoaded', async function() {
+    console.log('DOM 로드 완료, 초기화 시작');
     
-    // 초기화
-    goToToday();
-    loadEventsData();
+    // 이미 초기화되었다면 중복 실행 방지
+    if (isInitialized) {
+        console.log('이미 초기화됨, 스킵');
+        return;
+    }
     
-    // 사이드바 초기 상태 설정
-    const sidebar = document.getElementById('sidebar');
-    const mainContent = document.getElementById('mainContent');
-    
-    // 화면 크기에 따라 사이드바 초기 상태 설정
-    if (window.innerWidth >= 1024) {
-        sidebar.classList.add('open');
-        mainContent.classList.add('sidebar-open');
+    try {
+        // 로그인 상태 확인
+        if (!checkLoginStatus()) {
+            console.log('로그인 상태 확인 실패');
+            return;
+        }
+        
+        console.log('로그인 상태 확인 완료');
+        
+        // 사이드바 초기 상태 설정
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('mainContent');
+        
+        if (sidebar && mainContent) {
+            // 화면 크기에 따라 사이드바 초기 상태 설정
+            if (window.innerWidth >= 1024) {
+                sidebar.classList.add('open');
+                mainContent.classList.add('sidebar-open');
+            }
+            console.log('사이드바 초기화 완료');
+        }
+        
+        // 오늘 날짜로 설정
+        goToToday();
+        console.log('캘린더 날짜 설정 완료');
+        
+        // 이벤트 데이터 로드 및 캘린더 렌더링
+        await loadEventsData();
+        
+        // 초기화 완료 플래그 설정
+        isInitialized = true;
+        console.log('전체 초기화 완료');
+        
+    } catch (error) {
+        console.error('초기화 중 에러 발생:', error);
+        // 에러가 발생해도 기본 캘린더는 표시
+        renderCalendar();
+        isInitialized = true;
     }
 });
 
 // 이벤트 데이터 로드
 async function loadEventsData() {
+    console.log('이벤트 데이터 로드 시작');
+    
     try {
         const response = await fetch('/api/events');
+        console.log('API 응답 상태:', response.status);
+        
         if (response.ok) {
             eventsData = await response.json();
+            console.log('이벤트 데이터 로드 성공:', eventsData.length, '개 이벤트');
         } else {
+            console.warn('이벤트 데이터 로드 실패 - 상태코드:', response.status);
             eventsData = [];
-            console.warn('이벤트 데이터를 불러올 수 없습니다.');
         }
-        renderCalendar();
     } catch (error) {
-        console.error('데이터 로드 실패:', error);
+        console.error('API 호출 실패:', error);
         eventsData = [];
-        renderCalendar();
     }
+    
+    // 데이터 로드 완료 후 캘린더 렌더링
+    renderCalendar();
+    console.log('캘린더 렌더링 완료');
 }
 
 // 사이드바 토글
@@ -49,8 +118,10 @@ function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
     const mainContent = document.getElementById('mainContent');
     
-    sidebar.classList.toggle('open');
-    mainContent.classList.toggle('sidebar-open');
+    if (sidebar && mainContent) {
+        sidebar.classList.toggle('open');
+        mainContent.classList.toggle('sidebar-open');
+    }
 }
 
 // 월 변경
@@ -63,21 +134,30 @@ function changeMonth(delta) {
 function goToToday() {
     const today = new Date();
     currentDate = new Date(today.getFullYear(), today.getMonth(), 1);
+    console.log('현재 날짜 설정:', currentDate);
     renderCalendar();
 }
 
 // 캘린더 렌더링
 function renderCalendar() {
+    console.log('캘린더 렌더링 시작');
+    
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     const today = new Date();
     
     // 현재 월 표시
-    document.getElementById('currentMonth').textContent = 
-        `${year}년 ${month + 1}월`;
+    const currentMonthElement = document.getElementById('currentMonth');
+    if (currentMonthElement) {
+        currentMonthElement.textContent = `${year}년 ${month + 1}월`;
+    }
 
     // 캘린더 그리드 생성
     const calendarGrid = document.getElementById('calendarGrid');
+    if (!calendarGrid) {
+        console.error('calendarGrid 요소를 찾을 수 없습니다');
+        return;
+    }
     
     // 헤더 제외하고 기존 셀들 제거
     const headerCells = Array.from(calendarGrid.querySelectorAll('.calendar-header-cell'));
@@ -98,6 +178,8 @@ function renderCalendar() {
         const cell = createCalendarCell(cellDate, month);
         calendarGrid.appendChild(cell);
     }
+    
+    console.log('캘린더 렌더링 완료');
 }
 
 // 캘린더 셀 생성
@@ -155,6 +237,10 @@ function createCalendarCell(date, currentMonth) {
 
 // 특정 날짜의 이벤트 가져오기
 function getEventsForDate(date) {
+    if (!Array.isArray(eventsData)) {
+        return [];
+    }
+    
     const dateStr = date.toISOString().split('T')[0];
     return eventsData.filter(event => {
         const startDate = event.start_date;
@@ -169,9 +255,14 @@ function showDayEvents(date) {
     const events = getEventsForDate(date);
     const dateStr = `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
     
-    document.getElementById('dayEventsTitle').textContent = `${dateStr} 공연 목록`;
+    const titleElement = document.getElementById('dayEventsTitle');
+    if (titleElement) {
+        titleElement.textContent = `${dateStr} 공연 목록`;
+    }
     
     const body = document.getElementById('dayEventsBody');
+    if (!body) return;
+    
     body.innerHTML = '';
 
     if (events.length === 0) {
@@ -189,18 +280,27 @@ function showDayEvents(date) {
         });
     }
 
-    document.getElementById('dayEventsModal').classList.add('show');
+    const modal = document.getElementById('dayEventsModal');
+    if (modal) {
+        modal.classList.add('show');
+    }
 }
 
 // 일정 목록 모달 닫기
 function closeDayEventsModal() {
-    document.getElementById('dayEventsModal').classList.remove('show');
+    const modal = document.getElementById('dayEventsModal');
+    if (modal) {
+        modal.classList.remove('show');
+    }
     currentSelectedDate = null;
 }
 
 // 검색 기능
 function searchEvents() {
-    const query = document.getElementById('searchInput').value.trim();
+    const searchInput = document.getElementById('searchInput');
+    if (!searchInput) return;
+    
+    const query = searchInput.value.trim();
     
     if (!query) {
         showToast('검색어를 입력하세요.', 'warning');
@@ -220,6 +320,8 @@ function searchEvents() {
 // 검색 결과 표시
 function showSearchResults(results, query) {
     const container = document.getElementById('searchResults');
+    if (!container) return;
+    
     container.innerHTML = '';
 
     if (results.length === 0) {
@@ -235,7 +337,8 @@ function showSearchResults(results, query) {
             item.onclick = () => {
                 goToEventDate(event);
                 hideSearchResults();
-                document.getElementById('searchInput').value = '';
+                const searchInput = document.getElementById('searchInput');
+                if (searchInput) searchInput.value = '';
             };
             container.appendChild(item);
         });
@@ -246,7 +349,10 @@ function showSearchResults(results, query) {
 
 // 검색 결과 숨기기
 function hideSearchResults() {
-    document.getElementById('searchResults').classList.remove('show');
+    const container = document.getElementById('searchResults');
+    if (container) {
+        container.classList.remove('show');
+    }
 }
 
 // 이벤트 날짜로 이동
@@ -272,25 +378,40 @@ function handleSearchKeypress(event) {
 function showCreateModal() {
     isEditMode = false;
     editingEventId = null;
-    document.getElementById('createEventTitle').textContent = '새 공연 등록';
+    
+    const titleElement = document.getElementById('createEventTitle');
+    if (titleElement) {
+        titleElement.textContent = '새 공연 등록';
+    }
     
     // 폼 초기화
     const form = document.getElementById('eventForm');
-    form.reset();
+    if (form) {
+        form.reset();
+    }
     
     // 기본값 설정
     if (currentSelectedDate) {
         const dateStr = currentSelectedDate.toISOString().split('T')[0];
-        document.getElementById('start_date').value = dateStr;
-        document.getElementById('end_date').value = dateStr;
+        const startDateInput = document.getElementById('start_date');
+        const endDateInput = document.getElementById('end_date');
+        
+        if (startDateInput) startDateInput.value = dateStr;
+        if (endDateInput) endDateInput.value = dateStr;
     }
     
-    document.getElementById('createEventModal').classList.add('show');
+    const modal = document.getElementById('createEventModal');
+    if (modal) {
+        modal.classList.add('show');
+    }
 }
 
 // 생성 모달 닫기
 function closeCreateModal() {
-    document.getElementById('createEventModal').classList.remove('show');
+    const modal = document.getElementById('createEventModal');
+    if (modal) {
+        modal.classList.remove('show');
+    }
     isEditMode = false;
     editingEventId = null;
 }
@@ -298,6 +419,8 @@ function closeCreateModal() {
 // 이벤트 저장
 async function saveEvent() {
     const form = document.getElementById('eventForm');
+    if (!form) return;
+    
     const formData = new FormData(form);
     
     // 필수 필드 검증
@@ -358,11 +481,12 @@ async function saveEvent() {
         if (result.success) {
             showToast(isEditMode ? '공연이 수정되었습니다.' : '공연이 등록되었습니다.', 'success');
             closeCreateModal();
-            loadEventsData(); // 데이터 새로고침
+            await loadEventsData(); // 데이터 새로고침
         } else {
             showToast(result.message || '저장에 실패했습니다.', 'error');
         }
     } catch (error) {
+        console.error('저장 에러:', error);
         showToast('서버 연결에 실패했습니다.', 'error');
     }
 }
@@ -389,11 +513,12 @@ async function deleteCurrentEvent() {
             showToast('공연이 삭제되었습니다.', 'success');
             closeEventDetailModal();
             closeDayEventsModal();
-            loadEventsData(); // 데이터 새로고침
+            await loadEventsData(); // 데이터 새로고침
         } else {
             showToast('삭제에 실패했습니다.', 'error');
         }
     } catch (error) {
+        console.error('삭제 에러:', error);
         showToast('서버 연결에 실패했습니다.', 'error');
     }
 }
@@ -401,12 +526,14 @@ async function deleteCurrentEvent() {
 // 토스트 메시지
 function showToast(message, type = 'info') {
     const toast = document.getElementById('toast');
-    toast.textContent = message;
-    toast.className = `toast ${type} show`;
-    
-    setTimeout(() => {
-        toast.classList.remove('show');
-    }, 3000);
+    if (toast) {
+        toast.textContent = message;
+        toast.className = `toast ${type} show`;
+        
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 3000);
+    }
 }
 
 // 윈도우 리사이즈 처리
@@ -414,20 +541,62 @@ window.addEventListener('resize', function() {
     const sidebar = document.getElementById('sidebar');
     const mainContent = document.getElementById('mainContent');
     
-    if (window.innerWidth < 1024) {
+    if (sidebar && mainContent && window.innerWidth < 1024) {
         sidebar.classList.remove('open');
         mainContent.classList.remove('sidebar-open');
     }
 });
 
-// 새로고침 시 오늘로 이동
-window.addEventListener('beforeunload', function() {
-    sessionStorage.setItem('shouldGoToToday', 'true');
-});
+// 새로고침 시 오늘로 이동 제거 (문제 원인일 수 있음)
+// window.addEventListener('beforeunload', function() {
+//     sessionStorage.setItem('shouldGoToToday', 'true');
+// });
 
-window.addEventListener('load', function() {
-    if (sessionStorage.getItem('shouldGoToToday')) {
-        sessionStorage.removeItem('shouldGoToToday');
-        goToToday();
-    }
-});
+// window.addEventListener('load', function() {
+//     if (sessionStorage.getItem('shouldGoToToday')) {
+//         sessionStorage.removeItem('shouldGoToToday');
+//         goToToday();
+//     }
+// });
+
+// 누락된 함수들 추가 (다른 파일에서 정의되지 않았을 경우)
+function showEventDetail(event) {
+    // 이벤트 상세 모달 표시 로직
+    // 실제 구현이 필요한 함수
+    console.log('이벤트 상세 표시:', event);
+}
+
+function closeEventDetailModal() {
+    // 이벤트 상세 모달 닫기 로직
+    // 실제 구현이 필요한 함수
+    console.log('이벤트 상세 모달 닫기');
+}
+
+// 드래그 앤 드롭 관련 함수들 (다른 파일에서 정의되지 않았을 경우)
+function handleDragStart(e) {
+    // 드래그 시작 처리
+    console.log('드래그 시작');
+}
+
+function handleDragEnd(e) {
+    // 드래그 종료 처리
+    console.log('드래그 종료');
+}
+
+function handleDragOver(e) {
+    e.preventDefault();
+}
+
+function handleDrop(e) {
+    e.preventDefault();
+    // 드롭 처리
+    console.log('드롭 처리');
+}
+
+function handleDragEnter(e) {
+    // 드래그 진입 처리
+}
+
+function handleDragLeave(e) {
+    // 드래그 이탈 처리
+}
