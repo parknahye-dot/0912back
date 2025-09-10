@@ -7,6 +7,34 @@ let isEditMode = false;
 let editingEventId = null;
 let isInitialized = false;
 
+// 공연명 → 색상 매핑 (전역, 모든 달에서 공유)
+let eventColorMap = {};
+
+// 문자열을 고유 색상으로 변환
+function stringToColor(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const hue = Math.abs(hash) % 360; // 0~359
+    return `hsl(${hue}, 70%, 60%)`;
+}
+
+// 색상의 밝기 계산 (글자색 결정용)
+function getBrightness(hexOrHsl) {
+    // hsl이면 단순히 밝기 계산 대신 고정값 사용
+    if (hexOrHsl.startsWith("hsl")) {
+        return 120; // 중간 밝기로 가정 (검정/흰 글씨 구분용)
+    }
+    // hex 색상을 RGB로 변환
+    const r = parseInt(hexOrHsl.slice(1, 3), 16);
+    const g = parseInt(hexOrHsl.slice(3, 5), 16);
+    const b = parseInt(hexOrHsl.slice(5, 7), 16);
+    
+    // 밝기 계산 (0-255)
+    return (r * 299 + g * 587 + b * 114) / 1000;
+}
+
 // 로그인 상태 확인 함수 (auth.js에서 정의된 함수 사용)
 function checkLoginStatus() {
     const isLoggedIn = sessionStorage.getItem('isLoggedIn');
@@ -209,6 +237,17 @@ function createCalendarCell(date, currentMonth) {
         eventElement.dataset.eventId = event.event_seq;
         eventElement.draggable = true;
         
+        // 공연명별 색상 매핑 (전역 eventColorMap 사용)
+        if (!eventColorMap[event.subject]) {
+            eventColorMap[event.subject] = stringToColor(event.subject);
+        }
+        const bgColor = eventColorMap[event.subject];
+        eventElement.style.backgroundColor = bgColor;
+
+        // 글자색 자동 반전
+        const brightness = getBrightness(bgColor);
+        eventElement.style.color = brightness > 150 ? "#000" : "#fff";
+        
         eventElement.onclick = (e) => {
             e.stopPropagation();
             showEventDetail(event);
@@ -223,6 +262,12 @@ function createCalendarCell(date, currentMonth) {
 
     // 셀 클릭 이벤트
     cell.onclick = () => {
+        if (!isCurrentMonth) {
+            // 다른 달의 날짜를 클릭하면 해당 달로 이동
+            currentDate = new Date(date.getFullYear(), date.getMonth(), 1);
+            renderCalendar();
+            return;
+        }
         showDayEvents(date);
     };
     
@@ -492,111 +537,4 @@ async function saveEvent() {
 }
 
 // 현재 이벤트 삭제
-async function deleteCurrentEvent() {
-    if (!window.currentEventData) {
-        showToast('삭제할 이벤트가 선택되지 않았습니다.', 'error');
-        return;
-    }
-    
-    if (!confirm('정말로 이 공연을 삭제하시겠습니까?')) {
-        return;
-    }
-    
-    try {
-        const response = await fetch(`/api/events/${window.currentEventData.event_seq}`, {
-            method: 'DELETE'
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            showToast('공연이 삭제되었습니다.', 'success');
-            closeEventDetailModal();
-            closeDayEventsModal();
-            await loadEventsData(); // 데이터 새로고침
-        } else {
-            showToast('삭제에 실패했습니다.', 'error');
-        }
-    } catch (error) {
-        console.error('삭제 에러:', error);
-        showToast('서버 연결에 실패했습니다.', 'error');
-    }
-}
-
-// 토스트 메시지
-function showToast(message, type = 'info') {
-    const toast = document.getElementById('toast');
-    if (toast) {
-        toast.textContent = message;
-        toast.className = `toast ${type} show`;
-        
-        setTimeout(() => {
-            toast.classList.remove('show');
-        }, 3000);
-    }
-}
-
-// 윈도우 리사이즈 처리
-window.addEventListener('resize', function() {
-    const sidebar = document.getElementById('sidebar');
-    const mainContent = document.getElementById('mainContent');
-    
-    if (sidebar && mainContent && window.innerWidth < 1024) {
-        sidebar.classList.remove('open');
-        mainContent.classList.remove('sidebar-open');
-    }
-});
-
-// 새로고침 시 오늘로 이동 제거 (문제 원인일 수 있음)
-// window.addEventListener('beforeunload', function() {
-//     sessionStorage.setItem('shouldGoToToday', 'true');
-// });
-
-// window.addEventListener('load', function() {
-//     if (sessionStorage.getItem('shouldGoToToday')) {
-//         sessionStorage.removeItem('shouldGoToToday');
-//         goToToday();
-//     }
-// });
-
-// 누락된 함수들 추가 (다른 파일에서 정의되지 않았을 경우)
-function showEventDetail(event) {
-    // 이벤트 상세 모달 표시 로직
-    // 실제 구현이 필요한 함수
-    console.log('이벤트 상세 표시:', event);
-}
-
-function closeEventDetailModal() {
-    // 이벤트 상세 모달 닫기 로직
-    // 실제 구현이 필요한 함수
-    console.log('이벤트 상세 모달 닫기');
-}
-
-// 드래그 앤 드롭 관련 함수들 (다른 파일에서 정의되지 않았을 경우)
-function handleDragStart(e) {
-    // 드래그 시작 처리
-    console.log('드래그 시작');
-}
-
-function handleDragEnd(e) {
-    // 드래그 종료 처리
-    console.log('드래그 종료');
-}
-
-function handleDragOver(e) {
-    e.preventDefault();
-}
-
-function handleDrop(e) {
-    e.preventDefault();
-    // 드롭 처리
-    console.log('드롭 처리');
-}
-
-function handleDragEnter(e) {
-    // 드래그 진입 처리
-}
-
-function handleDragLeave(e) {
-    // 드래그 이탈 처리
-}
+async
