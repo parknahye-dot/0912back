@@ -44,5 +44,6 @@ function createEventDetailContent(event) {
         const weekday = weekdays[date.getDay()];
         return `${year}.${month}.${day} (${weekday})`;
     };
+}
 
     // 가격
