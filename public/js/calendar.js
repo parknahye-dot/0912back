@@ -29,24 +29,19 @@ document.addEventListener('DOMContentLoaded', function() {
 // 이벤트 데이터 로드
 async function loadEventsData() {
     try {
-        console.log('데이터를 로드합니다...');
         const response = await fetch('/api/events');
-        
         if (response.ok) {
             eventsData = await response.json();
-            console.log('로드된 이벤트 수:', eventsData.length);
-            console.log('이벤트 데이터:', eventsData);
         } else {
-            console.warn('이벤트 데이터 응답 오류:', response.status);
             eventsData = [];
+            console.warn('이벤트 데이터를 불러올 수 없습니다.');
         }
+        renderCalendar();
     } catch (error) {
         console.error('데이터 로드 실패:', error);
         eventsData = [];
-        showToast('데이터를 불러올 수 없습니다.', 'error');
+        renderCalendar();
     }
-    
-    renderCalendar();
 }
 
 // 사이드바 토글
